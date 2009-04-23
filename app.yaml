@@ -1,5 +1,5 @@
-application: govpix
-version: 1
+application: plopnotch
+version: 1-01
 runtime: python
 api_version: 1
 
