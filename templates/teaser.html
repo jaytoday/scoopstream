@@ -11,7 +11,7 @@
 <script type="text/javascript">{% include "signup.js" %}</script> 
 
 {% block head %}{% endblock head %}
-<title>TuitionChange</title>
+<title>Alpha Test</title>
 
 </head>
 
@@ -64,7 +64,7 @@
 <div class="homepage" style="height:300px;">
 
 <div class="logo" style="position:absolute;" >
-<img src="/static/autotip.png"/>
+{# <img src="/static/autotip.png"/> #}
 </div>
 <!--
 <div class="add_autotip" style="position:absolute; text-align:center; line-height: 1.3em; font-size: 28px; margin: 80px 350px; width: 300px;" >
@@ -79,9 +79,12 @@ for each mention of
 
 </div>
 -->
-{% for result in results %}
-{{ result }}
+<ul>
+{% for scoop in scoops %}
+<li>{{ scoop.user.name }} - {{ scoop.time_delta }} seconds - {{ scoop.news_link.url }} - {{ scoop.user_link.url }}</li>
+<br/><br/>
 {% endfor  %}
+</ul>
 {% endblock main %}
 
 </div>

@@ -1436,7 +1436,7 @@ class Api(object):
 
       # If the cached version is outdated then fetch another and store it
       if not last_cached or time.time() >= last_cached + self._cache_timeout:
-        url_data = opener.open(url, encoded_post_data).read()
+        zurl_data = opener.open(url, encoded_post_data).read()
         self._cache.Set(key, url_data)
       else:
         url_data = self._cache.Get(key)

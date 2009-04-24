@@ -61,7 +61,7 @@ class RPCHandler(webapp.RequestHandler):
     	ns = NewsSource.all().fetch(1000)
     	for source in ns:
     	    links = Links(source, news_source=True)
-    	    links.twitter_retrieve()
+    	    print links.twitter_retrieve()
     	    continue 
 
 
@@ -96,6 +96,14 @@ class RPCHandler(webapp.RequestHandler):
   	    links = Links(user, news_source=False)
   	    links.find_scoops()
   	    continue 
+
+  def delete_scoops(self, *args):
+  	from datastore import Scoop	
+  	scoops = Scoop.all().fetch(1000)
+  	for scoop in scoops: scoop.delete()
+
+
+
 
 
 

@@ -19,9 +19,16 @@ _TWIT_UPDATE = "https://twitter.com/statuses/update.json"
 class MainPage(webapp.RequestHandler):
 
 	def get(self):	
-		template_values = {}
+		template_values = {'scoops': self.get_scoops()}
 		self.response.out.write(template.render('templates/teaser.html', template_values))
 
+
+	def get_scoops(self):	
+		from datastore import User
+		user = User.all().get()
+		scoops = user.scoops
+		return scoops.fetch(1000)
+		
 
 class TwitterBot(webapp.RequestHandler):
 
