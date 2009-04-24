@@ -18,45 +18,8 @@ _TWIT_UPDATE = "https://twitter.com/statuses/update.json"
 
 class MainPage(webapp.RequestHandler):
 
-	def perform_search(self):
-		query = self.request.get('user')
-		if len(query) == 0: return []
-		search_url = 'http://search.twitter.com/search.json?q=%s' % query
-		timeline_url = 'http://twitter.com/statuses/user_timeline/' + query + '.json'
-		results = urlfetch.fetch(url=timeline_url)        
-		return  self.decode(results.content)
-		
-		# a website is two characters surrounded by a dot. (.*)/.(.*)
-		# ([a-zA-Z0-9///:]*)\.([a-zA-Z0-9///:]*)
-		
-
-	def decode(self, results):
-		def transform(result):
-			return {
-				'title':"Twitter: %s" % result['from_user'],
-				'image':result['profile_image_url'],
-				'url':"http://twitter.com/%s/" % result['from_user'],
-				'text':result['text'],
-				}
-
-		import simplejson
-		data = simplejson.loads(results)
-		print ""
-		import re
-		for update in data:
-			link_pattern = re.compile(".([/.a-zA-Z0-9///:]*)[a-zA-Z0-9]\.[a-zA-Z0-9]([/.a-zA-Z0-9///:]*)")
-			r = link_pattern.search(update['text'])
-			if r: print "link: " + r.group()
-			print "text " + update['text']
-			print "date " + update['created_at']
-		if data.get('error', False): return "error!"
-		print data
-		return [ transform(x) for x in data['results'] ]
-
-
-
 	def get(self):	
-		template_values = {'results': self.perform_search()}
+		template_values = {}
 		self.response.out.write(template.render('templates/teaser.html', template_values))
 
 
