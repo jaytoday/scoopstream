@@ -1,4 +1,9 @@
 
+TODO:
+
+Cleanup where sets are set()
+
+
 #Problem with PlopNotch - are most people pasting news story links, or just entertainment? (Entertainment is news too!)
  
 Break up updating into chunks (either with # or with try/except block)

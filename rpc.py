@@ -27,16 +27,6 @@ class RPCHandler(webapp.RequestHandler):
 
 
 
-
-  def add_autotip(self, *args):
-	if not self.request.get('user'): return "user required"
-	if not self.request.get('pledge'): return "pledge required"
-	from datastore import TwitterUser
-	new_user = TwitterUser(id = self.request.get('user'), pledge = int(self.request.get('pledge')))
-	db.put(new_user)
-	return "OK"
-
-
   def add_source(self, *args):
   	if not self.request.get('name'): return "name required"
   	from datastore import NewsSource
@@ -44,6 +34,7 @@ class RPCHandler(webapp.RequestHandler):
   	twitter_username = self.request.get('name'))
   	db.put(new_source)
 	return "OK"
+
 
   def add_user(self, *args):
 	if not self.request.get('name'): return "name required"
@@ -63,6 +54,7 @@ class RPCHandler(webapp.RequestHandler):
     	    links = Links(source, news_source=True)
     	    print links.twitter_retrieve()
     	    continue 
+	
 
 
 

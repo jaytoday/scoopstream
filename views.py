@@ -30,57 +30,22 @@ class MainPage(webapp.RequestHandler):
 		return scoops.fetch(1000)
 		
 
-class TwitterBot(webapp.RequestHandler):
+class Zemanta(webapp.RequestHandler):
 
-	def get(self):
-		import os
-		if os.environ.get('SERVER_SOFTWARE','').startswith('Devel'): DEBUG = True
-		else: DEBUG = False 
-		# Do some stuff - what ever it is you want to tweet about!
-		import datetime
-		msg = str(datetime.datetime.now())
-
-		if DEBUG == True: username = _TWITTERBOTDEV_USER
-		else: username = _TWITTERBOT_USER
-
-		response = self.TwitterPost(msg, username)
-
-		if response != 200:
-			status = "Whoops. Twitter was down or your code stuffed up"
-		else:
-			status = "Hooray! Tweeted: %s " % msg
-
-		template_values={'status': status}
-		self.response.out.write(template.render('templates/bot.html', template_values))
+	def get(self):	
+		from zemanta import request
+		request()
+		return
+		
+		template_values = {'scoops': self.get_scoops()}
+		self.response.out.write(template.render('templates/teaser.html', template_values))
 
 
-	def TwitterPost(self, msg, username):
-
-	  password = _TWITTERBOT_PWD
-
-	  form_fields = {
-		"status": msg,
-		"source": "twendly"  # If you register your bot with Twitter, this is how posts know to show "from Twendly" with a link back to the Twendly site.
-		}
-
-	  import base64
-	  import urllib
-	  authheader =  "Basic %s" % base64.encodestring('%s:%s' % (username, password))
-
-	  base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
-	  authheader =  "Basic %s" % base64string
-
-	  payload = urllib.urlencode(form_fields)
-
-	  # Note the URL is using HTTPS which is supported by AppEngine so the call should be secured.
-	  url = _TWIT_UPDATE
-
-	  result = urlfetch.fetch(url=url,payload=payload,method=urlfetch.POST, headers={"Authorization": authheader})
-
-	  if int(result.status_code) != 200:
-		# You could get fancy and put some error handling in here if you're inclined.
-		return int(result.status_code)
-
-	  return 200
+	def get_scoops(self):	
+		from datastore import User
+		user = User.all().get()
+		scoops = user.scoops
+		return scoops.fetch(1000)
+		
       
       

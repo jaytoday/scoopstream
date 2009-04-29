@@ -3,7 +3,7 @@ def url_routes(map):
 
 	#Public Views
 	map.connect('', controller = 'views:MainPage')
-	map.connect('bot', controller = 'views:TwitterBot')
+	map.connect('zemanta', controller = 'views:Zemanta')
 								
 	#XML-RPC
 	map.connect('/rpc', controller = 'rpc:RPCHandler')

@@ -16,19 +16,14 @@ http://wiki.sunlightlabs.com/Sunlight_API_Documentation
 import logging
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
-
-SUNLIGHT_BASE_URL = "http://services.sunlightlabs.com/api/"
-FUZZY_SEARCH = "legislators.search"
-ZIP_SEARCH = "legislators.allForZip"
-API_KEY = "06b192d4ec3fd9de2d7a21cdf1b67ec8" # Enter Your Own API Key Here 
-CACHE_TIME = 2629700
- # Responses cached for almost 4 weeks
- # The cache can be reset through the GAE dashboard
-# search_url = 'http://search.twitter.com/search.json?q=%s' % query
+from utils.utils import memoize
 
 
 STATUS_COUNT = '10'
 DELTA_SECONDS_LIMIT = -20000
+MIN_TEXT_LENGTH = 50
+FETCH_CACHETIME = 240000
+CACHETIME = 18000
 
 class Links():
 
@@ -41,10 +36,11 @@ class Links():
         self.save = []
         from utils import twitter
         api = twitter.Api() # username, password
-        try: statuses = api.GetUserTimeline(self.this_user.twitter_username, count=STATUS_COUNT)
-        except: return "getUserTimeline not working - twitter may be down"
+        statuses = self.get_test_statuses()
+        #try: statuses = self.get_twitter_statuses(self.this_user.twitter_username, api) 
+        #except: statuses = self.get_test_statuses() #return "getUserTimeline not working - twitter may be down"
         import datetime, re
-        http_pattern = re.compile("http([/.a-zA-Z0-9///:]*)[a-zA-Z0-9]\.[a-zA-Z0-9///:][/.a-zA-Z0-9///:]([/.a-zA-Z0-9///:]*)")
+        http_pattern = re.compile("http([/.a-zA-Z0-9///:_-]*)[a-zA-Z0-9_-]\.[a-zA-Z0-9///:_-][/.a-zA-Z0-9///:_-]([/.?&=a-zA-Z0-9///:_-]*)")
         www_pattern = re.compile("www([/.a-zA-Z0-9///:]*)[a-zA-Z0-9]\.[a-zA-Z0-9///:][/.a-zA-Z0-9///:]([/.a-zA-Z0-9///:]*)")
         for status in statuses:
             status.date = datetime.datetime.strptime(status.created_at, '%a %b %d %H:%M:%S +0000 %Y')
@@ -55,42 +51,153 @@ class Links():
                 status.link = "http://" + wwwmatch.group.strip()# create real date object from status['created_at']                     
             else: status.link = httpmatch.group().strip()
             self.save_link(status.link, status.text, status.date, platform=platform, id=status.id)
-        db.put(self.save)
+        self.save = list( set(self.save) )
+        #db.put(self.save)
+        return
+        for item in self.save:
+            try: 
+                db.put(item)
+                print "was able to save " + str(item.__dict__)
+            except: print "cannot save " + str(item.__dict__)
         return "found " + str(len(self.save)) + " new links"
 
+
+  @memoize('test_statuses', FETCH_CACHETIME) # um 20 minutes?
+  def get_test_statuses(self):
+        class Status(object): pass
+        data = open("data/user_timeline.json")
+        status_data = eval( data.read() )
+        statuses = []
+        for status in status_data:
+            status_obj = Status()
+            status_obj.created_at = status['created_at']
+            status_obj.text = status['text']
+            status_obj.id = status['id']
+            statuses.append(status_obj)
+        return statuses
+        
+#  @memoize('statuses', FETCH_CACHETIME) # um 20 minutes?
+  def get_twitter_statuses(self, user, api):
+        data = api.GetUserTimeline(user, count=STATUS_COUNT)
+        return data
+        
 
   def save_link(self, used_url, text, publish_date, platform=None, id=None):
       link_key_name = self.get_link_key_name(used_url, platform)
       from datastore import Link
       existing_link = Link.get_by_key_name(link_key_name)
       if existing_link: 
-          logging.warning('save_link found match for key_name %s' % link_key_name)
+          logging.warning('save_link already saved with key_name %s' % link_key_name)
+          print "link already exists"
           return "link already exists"
-      resolved_url = self.resolve_url(used_url)
-      if resolved_url == "error": resolved_url = used_url 
+      this_page = self.get_page(used_url)
+      if not this_page: return logging.warning("not saving page!")
       text = db.Text(text)
       new_link = Link(key_name = link_key_name,
                       used_url = used_url,
-                      url = resolved_url, 
                       text = text,
                       publish_date = publish_date)
+      if this_page['location'] != "error": new_link.url = this_page['location'] 
+      else: new_link.url = used_url
+      if this_page['content'] != "error": new_link.content = db.Text(this_page['content']) 
+      
       new_link.is_news_source = self.news_source
       if self.news_source: new_link.news_source = self.this_user
       else: new_link.user = self.this_user
       #link location, platform, date
-      self.save.append(new_link)
 
-  def resolve_url(self, used_url):
+      if new_link.content: self.analyze_link(new_link)    
+      logging.info('saving new link: %s: ', str(new_link.url) )
+      if new_link: self.save.append(new_link)
+
+#  @memoize('get_page', FETCH_CACHETIME)
+  def get_page(self, used_url):
+	page = {}
 	from google.appengine.api import urlfetch
-	try: fetch_page = urlfetch.fetch(used_url, follow_redirects=False)
-	except: 
-	    logging.error('unable to fetch url %s' % used_url)
-	    return "error"
-	# do we want to check if status is not 200 first?
-	return fetch_page.headers['location']
+	print "getting page"
+	if True: 
+	    fetch_page = urlfetch.fetch(used_url, follow_redirects=False)
+	    logging.info("url %s returned status code %s" % (used_url, fetch_page.status_code))
+	    if fetch_page.status_code > 399: 
+	        logging.warning("url %s returned error status code %s" % (used_url, fetch_page.status_code))
+	        return False
+	    if 299 < fetch_page.status_code < 303: 
+	        page['location'] = fetch_page.headers.get('location')
+	        if not page['location']:
+	            logging.info("url %s returned error no location in header" % (used_url))
+	            return False
+	        logging.info('fetching redirected page')
+	        fetch_page = urlfetch.fetch(page['location'], follow_redirects=True)
+	    else: page['location'] = used_url # status code 200
+	   
+	    page['content'] = self.extract_content(fetch_page.content)   
+	    logging.info('content extracted from %s:  %s'  % (page['location'], page['content']) )# divs also?  
+	    
+ #	except:  logging.error('unable to fetch url %s' % used_url) # anything else?
+	return { "location": page.get('location', None), "content": page.get('content', None) }  
+	
+	
+
+#  @memoize('extract_content', CACHETIME)
+  def extract_content(self, html_doc):
+    from utils.BeautifulSoup import BeautifulSoup
+    soup = BeautifulSoup(html_doc)
+    content = "".join( [str(node.findAll(text=True)[0]) for node in soup.findAll('p') if len(str(node)) > MIN_TEXT_LENGTH] )
+    # there may be a problem with this
+    return content
+
+
+  @memoize('analyze_link', FETCH_CACHETIME)
+  def analyze_link(self, link): # link object
+	#db.put(self.save) # need to be saved
+	save = []
+	import zemanta
+	analysis = zemanta.analyze( link.content )
+	if not analysis: return False
+	from datastore import RelatedArticle, Link
+	for article in analysis['articles']:
+	    
+	    this_article = RelatedArticle.get_by_key_name(article['url'])
+	    if not this_article: 
+	        this_article = RelatedArticle(key_name = article['url'], 
+	                                      url = article['url'],
+	                                      title = article['title']) 
+	    new_articles = [ db.Link(article['url']) for article in analysis['articles'] ]
+	    try: this_article.also_related.extend(new_articles) # each article should be included once
+	    except: this_article.also_related = new_articles
+	    if len(this_article.related_to) > 1 : save.extend( self.add_link_relationships(this_article) )
+	    
+	    if this_article: save.append(this_article)	
+	
+	# What about analysis['keywords'], etc?
+	
+	 
+	self.save.extend( save ) 
+	
+
+  def add_link_relationships(self, shared_article):     
+	save = []
+	from datastore import RelatedArticle, Link # - global?
+	these_links = []	
+	for link_url in shared_article.related_to: 
+	    this_link = Link.get_by_key_name(link_url)
+	    if not this_link:
+	        logging.warning('link doesnt exist')
+	        continue
+	    these_links.append(this_link)	    
+	    # save key, value pairs to each link for each article-link combo 
+	    for link_url in shared_article.related_to: this_link.add_relationship( link_url, shared_article )
+	    save.append(this_link)	
+	return save
+
+  
+  
+  # Utils
   
   def get_link_key_name(self, url, platform):
       return self.this_user.name + "_" + url + "_" + platform
+  
+  
   
   
   def find_scoops(self):
