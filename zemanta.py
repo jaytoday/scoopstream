@@ -9,12 +9,12 @@ API_KEY = 'n5wfc2kjavepgz32qpmjp35d'
 
 
 def analyze(link_text):
+	link_text = link_text[:1200]
 	args = {'method': 'zemanta.suggest',
 			'api_key': API_KEY,
 			'text': link_text,
 			'return_categories': 'dmoz',
 			'format': 'json'}            
-			
 
 	args_enc = urllib.urlencode(args)
 	try: fetch_page = urlfetch.fetch(GATEWAY, payload=args_enc, method="POST")

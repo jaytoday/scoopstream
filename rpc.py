@@ -97,6 +97,18 @@ class RPCHandler(webapp.RequestHandler):
 
 
 
+  def create_scoop(self, *args):
+  	from fixtures import Fixtures
+  	f = Fixtures()
+  	f.scoop()
+
+
+  def fixtures(self, *args):
+  	from fixtures import Fixtures
+  	f = Fixtures()
+  	f.wipe()
+
+
 
 
 

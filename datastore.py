@@ -28,6 +28,7 @@ class Link(db.Model):
     user = db.ReferenceProperty(User, collection_name="links", required=False)
     news_source = db.ReferenceProperty(NewsSource, collection_name="links", required=False)
     is_news_source = db.BooleanProperty(default=False)
+    been_scooped = db.IntegerProperty(default=0)
     url = db.LinkProperty()
     used_url = db.LinkProperty(required=False) # if different than url 
     link_location = db.LinkProperty(required=False) # status update link
@@ -44,8 +45,34 @@ class Link(db.Model):
       	try: relationships[link_url].extend(str(shared_article.url))
         except: relationships[link_url] = [ str(shared_article.url) ]
       	self.relationships = str(relationships)
+      	print db.put(self) # PERFORMANCE, AHH!
+      	
+      	# Relationship is always two ways, right?
+      	
+      	
       	# not saving
 
+    def get_relationships(self): # for views
+      	relationships = eval(self.relationships)
+      	# map out the links using preferences or popularity
+      	return relationships
+      	
+
+    def singles_night(self): # for views
+      	relationships = eval(self.relationships)
+      	from datastore import Link, RelatedArticle
+      	article = RelatedArticle.all().get()
+      	news_bool = self.is_news_source
+      	link = Link.gql("WHERE is_news_source != :1", news_bool).get()
+      	relationships[link.url] = article.url
+      	self.related_articles.append(article.url)
+      	link.related_articles.append(article.url)
+      	self.relationships = str(relationships)
+      	print self.__dict__
+      	db.put([self, link ])      	
+      	# map out the links using preferences or popularity
+      	
+      	
 
 class RelatedArticle(db.Model): 
     # Result of analysis of Link content
@@ -70,3 +97,4 @@ class Scoop(db.Model):
   news_source = db.ReferenceProperty(NewsSource, collection_name="scoops")
   news_link = db.ReferenceProperty(Link, collection_name="scooped")
   user_link = db.ReferenceProperty(Link, collection_name="scoops")
+  related_articles =  db.ListProperty(db.Link)
