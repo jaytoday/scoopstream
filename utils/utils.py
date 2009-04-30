@@ -102,7 +102,78 @@ def memoize(key, time=1000000):
         return wrapper
     return decorator  
 
+
+### TASKS
+
+def task(task_type, time=1000000):
+    """Decorator to memoize functions using memcache."""
     
+    def decorator(fxn):
+        def wrapper(*args, **kwargs):
+            from google.appengine.api import memcache
+            task_list = memcache.get(task_type) 
+            if kwargs.get('run_task') is True: 
+               data = fxn(*args, **kwargs)
+               return data
+            if not task_list: task_list = [ kwargs ]
+            elif kwargs in task_list:
+                  print "ALREADY EXISTS"
+                  return False 
+            if kwargs not in task_list: task_list.append(kwargs)                                
+            memcache.set(task_type, task_list, time)
+            return True
+        return wrapper
+    return decorator  
+
+
+def run_task(task_type, time=1000000, backup=None):
+
+    from google.appengine.api import memcache
+    from methods import Tasks
+    task_list = memcache.get(task_type)
+    try: kwargs = task_list.pop(0)
+    except:
+        logging.info("no task items left for task: %s" % task_type)
+        if backup:
+            print "backup"
+            tasks = Tasks()
+            bk_fxn = getattr(tasks, backup, None)
+            if bk_fxn: bk_fxn() 
+            return True     
+        return False
+    tasks = Tasks()
+    fxn = getattr(tasks, task_type, None)
+    print ""
+    print kwargs
+    kwargs['run_task'] = True
+    if not fxn: 
+        logging.warning("cannot get function for task: %s" % task_type)
+        return False    
+    data = fxn(**kwargs)
+    if not data: 
+        logging.warning("cannot get data for task: %s" % task_type)
+        return False
+    memcache.set(task_type, task_list, time)
+    if data == "rerun":
+        logging.info("rerunning task: %s" % task_type)
+        return run_task(task_type)
+    return data
+
+
+def entity_set(entity_list):
+	set_list = []
+	key_list = []
+	for entity in entity_list:
+	    try:
+	      if entity.key() not in key_list:
+	        key_list.append( entity.key() )
+	        set_list.append( entity )
+	    except:
+	        logging.warning('unable to access key for entity: %s' % entity.__dict__ )
+	        continue
+	return set_list
+	        
+	    
 
 ### SESSIONS
 

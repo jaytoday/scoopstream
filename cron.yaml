@@ -1,0 +1,22 @@
+cron:
+
+- description: twitter_news_refresh
+  url: /rpc?action=twitter_news_refresh
+  schedule: every 1 minutes
+  
+- description: twitter_user_refresh
+  url: /rpc?action=twitter_user_refresh
+  schedule: every 1 minutes
+
+- description: save_link
+  url: /rpc?action=save_link
+  schedule: every 1 minutes
+
+- description: analyze_link
+  url: /rpc?action=analyze_link
+  schedule: every 1 minutes
+
+- description: find_twitter_scoops
+  url: /rpc?action=find_twitter_scoops
+  schedule: every 10 minutes
+

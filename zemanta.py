@@ -9,7 +9,7 @@ API_KEY = 'n5wfc2kjavepgz32qpmjp35d'
 
 
 def analyze(link_text):
-	link_text = link_text[:1200]
+	link_text = link_text
 	args = {'method': 'zemanta.suggest',
 			'api_key': API_KEY,
 			'text': link_text,

@@ -7,19 +7,24 @@ Models are defined in this module.
 
 """
 
+# Should these be one model type?
+
 class User(db.Model): 
     name = db.StringProperty(required=False)
     date = db.DateTimeProperty(auto_now_add=True)
     modified = db.DateTimeProperty(auto_now=True)
     twitter_username = db.StringProperty(required=False)
 
+    def is_news_source(self): return False
+    
 class NewsSource(db.Model): 
     name = db.StringProperty(required=False)
     date = db.DateTimeProperty(auto_now_add=True)
     modified = db.DateTimeProperty(auto_now=True)
     twitter_username = db.StringProperty(required=False)
     #image
-    
+
+    def is_news_source(self): return True
 
 class Link(db.Model): 
     date = db.DateTimeProperty(auto_now_add=True)
@@ -36,17 +41,18 @@ class Link(db.Model):
     story = db.StringProperty(required=False) # deprecated
     content = db.TextProperty(required=False)
     related_articles = db.ListProperty(db.Link) # url is key_name of RelatedLink
-    relationships = db.StringProperty(default="{}")
+    relationships = db.TextProperty(default="{}")
 
-    def add_relationship(self, link_url, shared_article): # for views
+    def add_relationship(self, link_key, shared_article): # for views
       	import logging
-      	logging.info("adding link relationship for %s from %s shared article" % ( str(self.url) , shared_article ) ) 
+      	logging.info("%s adding link relationship for Link with key %s from %s shared article" % (str(self.url), link_key[-5:], shared_article.url ) ) 
       	relationships = eval(self.relationships)
-      	try: relationships[link_url].extend(str(shared_article.url))
-        except: relationships[link_url] = [ str(shared_article.url) ]
-      	self.relationships = str(relationships)
-      	print db.put(self) # PERFORMANCE, AHH!
-      	
+      	try: 
+      	    if str(shared_article.url) not in relationships[link_key]: relationships[link_key].append(str(shared_article.url)) 
+        except KeyError: relationships[link_key] = [ str(shared_article.url) ]
+      	self.relationships = db.Text(str(relationships))
+      	db.put(self) # PERFORMANCE, AHH!
+      	return self
       	# Relationship is always two ways, right?
       	
       	
@@ -54,6 +60,7 @@ class Link(db.Model):
 
     def get_relationships(self): # for views
       	relationships = eval(self.relationships)
+      	#we might want to convert strings to db.Key() here
       	# map out the links using preferences or popularity
       	return relationships
       	
@@ -98,3 +105,6 @@ class Scoop(db.Model):
   news_link = db.ReferenceProperty(Link, collection_name="scooped")
   user_link = db.ReferenceProperty(Link, collection_name="scoops")
   related_articles =  db.ListProperty(db.Link)
+
+  def humanized_time_delta(self): # for views
+      	return self.time_delta
