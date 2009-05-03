@@ -686,6 +686,7 @@ margin:-3px -50px;
 position:absolute;
 }
 
+div.panel div.profile_image img{ height:48px; } 
 
 div.panel div.scoop_post {
 margin:0 0 0 90px;
@@ -694,6 +695,7 @@ height:50px;
 } 
 
 div.panel div.flag { 
+    width:50px;
 background:#CCCCCC none repeat scroll 0 0;
 float:right;
 font-size:10px;
