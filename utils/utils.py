@@ -105,7 +105,7 @@ def memoize(key, time=1000000):
 
 ### TASKS
 
-def task(task_type, time=1000000):
+def task(task_type, time=1000000, shuffle=False):
     """Decorator to memoize functions using memcache."""
     
     def decorator(fxn):
@@ -120,6 +120,9 @@ def task(task_type, time=1000000):
                   print "ALREADY EXISTS"
                   return False 
             if kwargs not in task_list: task_list.append(kwargs)                                
+            if shuffle: 
+                import random
+                random.shuffle(task_list)
             memcache.set(task_type, task_list, time)
             return True
         return wrapper
@@ -153,6 +156,16 @@ def run_task(task_type, time=1000000, backup=None):
     if not data: 
         logging.warning("cannot get data for task: %s" % task_type)
         return False
+    if data == "fail":
+        logging.info('what we have here is a failure to communicate %s' % task_type)
+        f = memcache.get("fail" + task_type)
+        if f is None: f = 0
+        else: f += 1
+        if f > 2: memcache.set("fail" + task_type, None, time)
+        else: 
+            memcache.set("fail" + task_type, f, time)
+            return False
+        logging.info('your failure is complete - %s' % task_type) 
     memcache.set(task_type, task_list, time)
     if data == "rerun":
         logging.info("rerunning task: %s" % task_type)

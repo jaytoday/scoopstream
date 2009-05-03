@@ -2,7 +2,7 @@ def url_routes(map):
 
 
 	#Public Views
-	map.connect('', controller = 'views:MainPage')
+	map.connect('', controller = 'views:ViewScoops')
 	map.connect('zemanta', controller = 'views:Zemanta')
 								
 	#XML-RPC

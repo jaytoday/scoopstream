@@ -1,9 +1,5 @@
 cron:
 
-- description: twitter_news_refresh
-  url: /rpc?action=twitter_news_refresh
-  schedule: every 1 minutes
-  
 - description: twitter_user_refresh
   url: /rpc?action=twitter_user_refresh
   schedule: every 1 minutes

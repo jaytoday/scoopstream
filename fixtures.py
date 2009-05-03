@@ -4,7 +4,7 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import db
 from utils.utils import memoize
 
-from datastore import Link, RelatedArticle, User, NewsSource, Scoop
+from datastore import Link, RelatedArticle, User,  Scoop
 
 
 
@@ -12,16 +12,16 @@ from datastore import Link, RelatedArticle, User, NewsSource, Scoop
 class Fixtures():
 
 
-	def wipe(self):
-		links = Link.all().fetch(1000)
+	def wipe(self, users=False):
+		links = Link.all().fetch(500)
 		db.delete(links)
-		articles = RelatedArticle.all().fetch(1000)
+		articles = RelatedArticle.all().fetch(500)
 		db.delete(articles)
-		users = User.all().fetch(1000)
-		db.delete(users)
-		sources = NewsSource.all().fetch(1000)
-		db.delete(sources)
-		scoops = Scoop.all().fetch(1000)
+		if users: 
+		    users = User.all().fetch(500)
+		    db.delete(users)
+		
+		scoops = Scoop.all().fetch(500)
 		db.delete(scoops)
 		
 				

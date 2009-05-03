@@ -16,17 +16,17 @@ _TWITTERBOT_PWD = "buttbutt" # I'm lazy, I use the same password for both accoun
 _TWIT_UPDATE = "https://twitter.com/statuses/update.json"
 
 
-class MainPage(webapp.RequestHandler):
+class ViewScoops(webapp.RequestHandler):
 
 	def get(self):	
-		template_values = {'scoops': self.get_scoops()}
-		self.response.out.write(template.render('templates/teaser.html', template_values))
+		scoops = self.get_scoops()
+		template_values = {'scoops': scoops}
+		self.response.out.write(template.render('templates/scoops.html', template_values))
 
 
 	def get_scoops(self):	
-		from datastore import User
-		user = User.all().get()
-		scoops = user.scoops
+		from datastore import Scoop
+		scoops = Scoop.gql("WHERE flagged = :1", 0)
 		return scoops.fetch(1000)
 		
 
@@ -41,11 +41,6 @@ class Zemanta(webapp.RequestHandler):
 		self.response.out.write(template.render('templates/teaser.html', template_values))
 
 
-	def get_scoops(self):	
-		from datastore import User
-		user = User.all().get()
-		scoops = user.scoops
-		return scoops.fetch(1000)
-		
+
       
       
