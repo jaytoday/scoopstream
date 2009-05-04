@@ -286,7 +286,7 @@ class Links():
     codes = re.compile( '&.{1,6};' )
     try: 
         title = soup.html.head.title.contents[0].encode("latin1").decode('utf-8')
-        title = codes.sub('', title)
+        title = codes.sub('', title).replace("\n","")
     except: title = None
     content = ""
     content_nodes = soup.html.body.findAll('p')
@@ -361,16 +361,17 @@ class Scoops():
 			  time_delta = user_link.publish_date - this_other_link.publish_date 
 			  logging.info(time_delta)
 			  # convert to seconds and manually make negative
+
 			  if str(time_delta).startswith('-'): 
-			      scooper = this_other_link.user
-			      scooped = this_user
-			      scooper_link = this_other_link			  
-			      scooped_link = user_link  
-			  else: 
 			      scooper = this_user
 			      scooped = this_other_link.user
-			      scooper_link = user_link
-			      scooped_link = this_other_link
+			      scooper_link = user_link		  
+			      scooped_link = this_other_link	 
+			  else: 
+			      scooper = this_other_link.user
+			      scooped = this_user
+			      scooper_link = this_other_link
+			      scooped_link = user_link 
 			      
 			  #if time_delta < DELTA_SECONDS_LIMIT: continue 
 					 
