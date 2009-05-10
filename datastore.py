@@ -33,6 +33,12 @@ class User(db.Model):
 
 
 class Link(db.Model): 
+    """
+    
+    An additional requirement for newworthiness could be that at least 
+    one or two related articles match news site URLs in a whitelist
+    
+    """
     date = db.DateTimeProperty(auto_now_add=True)
     publish_date = db.DateTimeProperty()
     modified = db.DateTimeProperty(auto_now=True)
@@ -136,6 +142,8 @@ class Scoop(db.Model):
   scooped_link = db.ReferenceProperty(Link, collection_name="scooped")
   scooper_link = db.ReferenceProperty(Link, collection_name="scoops")
   related_articles =  db.ListProperty(db.Link)
+  matched_articles =  db.ListProperty(db.Link)
+  matched_count = db.IntegerProperty()
   flagged = db.IntegerProperty(default=0)
 
   def clean(self): # for views

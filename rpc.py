@@ -62,7 +62,13 @@ class RPCHandler(webapp.RequestHandler):
   	from datastore import Scoop	
   	scoops = Scoop.all().fetch(1000)
   	for scoop in scoops: scoop.delete()
-
+  	from datastore import Link
+  	links = Link.all().fetch(1000)
+  	for link in links:
+  		link.been_scooped = 0
+  		link.has_scooped = 0
+  	db.put(links)
+  	return "OK"
 
 
 
@@ -127,3 +133,5 @@ class RPCHandler(webapp.RequestHandler):
   		scoop.flagged = 0
   	db.put(scoops)
   	return "OK"
+
+

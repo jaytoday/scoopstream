@@ -2,7 +2,7 @@ import logging
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
-
+from google.appengine.ext import db
 from google.appengine.api import urlfetch
 
 
@@ -26,8 +26,8 @@ class ViewScoops(webapp.RequestHandler):
 
 	def get_scoops(self):	
 		from datastore import Scoop
-		scoops = Scoop.gql("WHERE flagged = :1", 0)
-		return scoops.fetch(1000)
+		scoops = db.Query(Scoop).filter('flagged =', 0).filter('matched_count >', 1).order('-matched_count').order('-date') #.order(-matched_count')
+		return scoops.fetch(50)
 		
 
 class Zemanta(webapp.RequestHandler):

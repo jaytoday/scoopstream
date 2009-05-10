@@ -15,3 +15,25 @@ indexes:
   properties:
   - name: date
     direction: desc
+
+# Unused in query history -- copied from input.
+- kind: Scoop
+  properties:
+  - name: flagged
+  - name: matched_count
+
+# Unused in query history -- copied from input.
+- kind: Scoop
+  properties:
+  - name: flagged
+  - name: matched_count
+    direction: desc
+
+# Used 4 times in query history.
+- kind: Scoop
+  properties:
+  - name: flagged
+  - name: matched_count
+    direction: desc
+  - name: date
+    direction: desc
