@@ -420,6 +420,8 @@ class Scoops():
 
   def flag(self, scoop_key):
   	this_scoop = Scoop.get_by_key_name(scoop_key)
+  	if not this_scoop: return logging.warning('unable to flag scoop with key: %s' % scoop_key )
   	this_scoop.flagged += 1
   	db.put(this_scoop)
+  	logging.info('flagged scoop with key: %s' % scoop_key )
   	return
