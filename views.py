@@ -40,7 +40,23 @@ class Zemanta(webapp.RequestHandler):
 		template_values = {'scoops': self.get_scoops()}
 		self.response.out.write(template.render('templates/teaser.html', template_values))
 
+class Twitter(webapp.RequestHandler):
+
+	def get(self):
+		user_name = "jamtoday"	
+		template_values = {'user_name': user_name}
+		self.response.out.write(template.render('templates/twitter.html', template_values))
 
 
-      
+	def get_twitter(self):	
+		TWITTER_URL = "http://www.twitter.com/" 
+		
+		import urllib
+		#self.request_args = {}
+		#self.formatted_args = urllib.urlencode(self.request_args)
+		from google.appengine.api import urlfetch
+		fetch_page = urlfetch.fetch(  url = TWITTER_URL,
+									method = urlfetch.GET) 
+		self.response.out.write(fetch_page.content)
+		      
       
