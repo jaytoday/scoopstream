@@ -1,29 +1,17 @@
-GovPix
+ScooppStream
 ================
 
-![Gov Logo](http://govpix.appspot.com/static/collage.png)
 
-
-GovPix is a GPLv3 licensed application that uses the Sunlight Labs API to disambiguate search terms into images of United States Congress representatives.
+ScoopStream is a GPLv3 licensed application that uses the Sunlight Labs API to disambiguate search terms into images of United States Congress representatives.
 
 For development updates, visit http://www.jamtoday.org.
 
 ------------
 
 
-
-Release Notes
-------------
-
-- March 19, 2009 
-    - Fuzzy name search and zip code search added.
-    - Because App Engine does not support PIL, Capitol Words API integration have been removed (for now). 
-
-
 Setup
 ------------
-
-GovPix requires the Google App Engine SDK. To deploy it, you must register an application at http://appengine.google.com
+ScooppStream requires the Google App Engine SDK. To deploy it, you must register an application at http://appengine.google.com
 
 See 'setup' for details about configuring dev_appserver.py.
 
