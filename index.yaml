@@ -29,7 +29,7 @@ indexes:
   - name: matched_count
     direction: desc
 
-# Used once in query history.
+# Used 24 times in query history.
 - kind: Scoop
   properties:
   - name: flagged

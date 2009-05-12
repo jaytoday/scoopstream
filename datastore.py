@@ -52,6 +52,7 @@ class Link(db.Model):
     id = db.StringProperty(required=False) # deprecated
     title = db.StringProperty(required=False) 
     content = db.TextProperty(required=False)
+    keywords = db.StringListProperty()
     related_articles = db.ListProperty(db.Link) # url is key_name of RelatedLink
     relationships = db.TextProperty(default="{}")
 

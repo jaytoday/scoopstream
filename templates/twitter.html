@@ -10,12 +10,76 @@
 <script type="text/javascript" src="/static/scripts/jquery-1.3.2.js"></script> 
 
 {% block head %}{% endblock head %}
-<title>YupGrade - {{ user_name }} on Twitter</title>
+<title>YupGrade - {{ this_user }} on Twitter</title>
 
 </head>
 
 <body style='width:100%; height: 100%'>
+
+
+<div id="masthead"></div>
+
+<div id="main">
+
+<div id="contain">     
+<div id="content">
+<div class="title"> <h1>
+<a href="/">{% block title %} 
+
+
+{% endblock title %} </a>
+
+
+</h1></div> 
+
+
+
+{% block link %}
+
+{% endblock link %}
+
+
+
+<div id="panels" class="autopagerize_page_element">
+
+
+{% block main %}
+
+
+<ul>
+
+<div class="panel" style="padding-bottom:0px;">
+
+<div class="panelop"> <div class="pheadfill style4">&nbsp;</div></div>
+
+<div class="panelcontent" > <div class="thecontent">
+<div class="innercontent">
+
+
+{% for topic in twitter_info.topics %}
+{{ topic }}<br/>
+{% endfor %}
+
+
+ </div></div></div> </div>  
+
+</ul>
+
+{% endblock main %}
+
+</div>
+
+</div>
+</div>
+</div>
+
+
+
 <div style='width:100%; height: 100%'>
+
+
+
+
 {# <iframe style='width:100%; height: 100%' src="http://www.twitter.com/{{user_name}}"></iframe> #}
 <div>
 </body>

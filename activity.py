@@ -5,168 +5,27 @@ from google.appengine.ext import db
 from utils.utils import memoize, task, entity_set, Debug
 
 from datastore import User, Link, RelatedArticle, Scoop
-
-STATUS_COUNT = '30'
-DELTA_SECONDS_LIMIT = -20000
-MIN_TEXT_LENGTH = 50
-FETCH_CACHETIME = 0#2000
-CACHETIME = 0#1000
-CONTENT_LIMIT = 800
-
-
-class Tasks():
-
-	def __init__(self): 
-	    self.save = []
-		
-	@task('save_link', shuffle=True)
-	def save_link(self, **kwargs): 
-	#def save_link(self, this_user, used_url, text, publish_date, *args):
-		  # temporarily have to do this
-		  if not Debug():
-			import sys
-			reload(sys)
-			sys.setdefaultencoding("utf-8")
-		  logging.info('saving link: %s ' % str(kwargs) )
-		  this_user = db.get( kwargs.get('this_user') )
-		  used_url = kwargs.get('used_url')
-		  text = kwargs.get('text')
-		  publish_date = kwargs.get('publish_date')
-		  platform = kwargs.get('platform')
-		  id = kwargs.get('id')
-
-		  link_methods = Links()
-		  from google.appengine.api import memcache
-		  save_link_list = memcache.get('save_links')
-		  # Save Link
-		  # Create the link entity, then get the page content and related links
-		  link_key_name = link_methods.get_link_key_name(this_user, used_url, platform)
-		  # check if link is already saved
-		  existing_link = Link.get_by_key_name(link_key_name)
-		  if existing_link: 
-			  logging.warning('save_link already saved with key_name %s. Going to attempt rerun.' % link_key_name)
-			  print "link already exists: ", link_key_name
-			  return "rerun"
-		  this_page = link_methods.get_page(used_url)
-		  if this_page == "fail": 
-			  print "unable to fetch and save page: ", used_url
-			  logging.warning("unable to fetch and save page: %s" % used_url)
-			  return "fail"
-		  if this_page == "pass": return True 
-		  text = db.Text(text)
-		  new_link = Link(key_name = link_key_name,
-						  used_url = used_url,
-						  url = this_page['location'],
-						  content = db.Text(this_page['content']),
-						  user = this_user,
-						  text = text,
-						  id=str(id),
-						  publish_date = publish_date)
-
-		  if this_page.get('title', None): new_link.title = this_page['title']
-		  else: 
-		      new_link.title = this_page['location'][:30]
-		      if len(this_page['location']) > 30: new_link.title += "..."
-		  self.analyze_link(link=new_link.key())    
-		  # or we can put new_link in rotating memcache queue
-		  self.save.append(new_link)		  
-		  db.put(self.save)
-		  logging.info('saved new link: %s' % str(new_link.url) )
-		  return self.save
-		  
-
-
-		
-
-	@task('analyze_link')
-	def analyze_link(self, **kwargs ): # link object
-		link = db.get( kwargs.get('link') )
-		import zemanta
-		logging.info('analyzing link: %s' % str(link.url) )
-		analysis = zemanta.analyze( link.content )
-		if not analysis or analysis['status'] == 'fail': 
-		    logging.error('unable to get zemanta analysis for link %s' % str(link.url) )
-		    return "fail"
-		article_urls = [ db.Link(article['url']) for article in analysis['articles'] ]
-		link.related_articles.extend(article_urls)
-		for article in analysis['articles']:	    
-			this_article = RelatedArticle.get_by_key_name(article['url'])
-			if not this_article: # if it doesn't exist, make it
-				this_article = RelatedArticle(key_name = article['url'], 
-											  url = article['url'],
-											  title = article['title']) 
-			new_articles = [ db.Link(article['url']) for article in analysis['articles'] ]
-			this_article.related_to.append(link.url)
-			link.related_articles.append(this_article.url)
-			this_article.also_related.extend([ article for article in article_urls if article != this_article.url ] ) # each article should be included once	    
-			if analysis.get('title', None): 
-			    link.title = analysis.get('title')
-			if len(this_article.related_to) > 1 : 
-				link_methods = Links()
-				self.save.extend( link_methods.add_link_relationships(this_article, link ) )	    
-			self.save.append(this_article.clean())
-		link.keywords = [ keyword['name'] for keyword in analysis['keywords'] ]
-		self.save.append(link.clean())	
-		self.save = entity_set(self.save)
-		db.put( self.save)		
-		logging.info('saved analyzed link: %s' % str(link.__dict__) )
-		return self.save	
-		
-
-
-		
-
-	@task('twitter_user_refresh')
-	def twitter_user_refresh(self, **kwargs ): # link object
-		this_user = db.get( kwargs['user'] )
-		links = Links()
-		links.twitter_retrieve(this_user)
-		return True
-
-
-	def twitter_user_backup(self): # link object
-		users = User.all().fetch(1000)
-		for this_user in users:
-			self.twitter_user_refresh(user=this_user.key())
-		from utils.utils import run_task
-		return run_task('twitter_user_refresh')
-
-"""
-	@task('twitter_news_refresh')
-	def twitter_news_refresh(self, **kwargs ): # link object
-		this_news_source = db.get( kwargs['news_source'] )
-		links = Links()
-		print links.twitter_retrieve(this_news_source)
-		return True
-		
-	def twitter_news_backup(self): # link object
-		news_sources = NewsSource.all().fetch(1000)
-		for this_news_source in news_sources:
-			self.twitter_news_refresh(news_source=this_news_source.key())
-		from utils.utils import run_task
-		return run_task('twitter_news_refresh')
-"""
+from utils import twitter
 
 
 
-class Links():
+class UserStats():
 
-  def __init__(self): 
+  def __init__(self, platform="twitter"): 
      self.save = [] 
-
-
-  	    
-
-  def twitter_retrieve(self, this_user, platform="twitter", test=False):
+     
+        
+        
+  def retrieve_user_info(self, twitter_user, platform="twitter", test=False):
+        self.twitter_api = twitter.Api() # username, password 
         link_count = []
-        from utils import twitter
-        api = twitter.Api() # username, password    
-        statuses = self.get_twitter_statuses(this_user.twitter_username, api) 
-        if test is not False: statuses = self.get_test_statuses(test)
-        if not statuses:
+        info = self.get_twitter_info(twitter_user) # .twitter_username
+        if not info:
         	logging.warning('twitter API appears to be down...')
+        	print "help!"
         	return False
-        	#statuses = self.get_test_statuses() #return "getUserTimeline not working - twitter may be down"
+        print info
+        return info
         import datetime, re
         user_object = getattr(statuses[0], 'user', None)
         if user_object: this_user = self.update_user(this_user, user_object)
@@ -194,10 +53,11 @@ class Links():
 
 
   def update_user(self, this_user, user_object):
+	print ""
+	print user_object
 	if getattr(user_object, 'name', None) and not this_user.name: this_user.name = user_object.name
 	#if user_object.description and not this_user.description:
 	# screen_name is twitter_username 
-	if getattr(user_object, 'description', None): this_user.description = user_object.description
 	if getattr(user_object, 'location', None): this_user.location = user_object.location
 	if getattr(user_object, 'profile_image_url', None): this_user.profile_image_url = user_object.profile_image_url
 	if getattr(user_object, 'followers_count', None): this_user.followers_count = user_object.followers_count
@@ -226,9 +86,10 @@ class Links():
         return statuses
         
 #  @memoize('statuses', FETCH_CACHETIME) # um 20 minutes?
-  def get_twitter_statuses(self, this_user, api):
-        try: data = api.GetUserTimeline(this_user, count=STATUS_COUNT)
-        except: return False
+  def get_twitter_info(self, twitter_user):
+        return self.twitter_api.GetUserTimeline(twitter_user)
+        try: data = self.twitter_api.GetUserTimeline(twitter_user)
+        except: return "api exception"
         return data
         
 
@@ -250,9 +111,6 @@ class Links():
 	            return False
 	        logging.info('fetching redirected page %s' % page['location'])
 	        fetch_page = urlfetch.fetch(page['location'], follow_redirects=True)
-	        if 299 < fetch_page.status_code < 303: 
-	            logging.warning("url %s error --  too many redirects" % (used_url))
-	            return False
 	        
 	    else: page['location'] = used_url # status code 200
 	    page['title'], page['content'] = self.extract_content(fetch_page.content)   

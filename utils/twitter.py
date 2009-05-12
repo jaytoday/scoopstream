@@ -1398,7 +1398,8 @@ class Api(object):
                 url,
                 post_data=None,
                 parameters=None,
-                no_cache=None):
+                no_cache=None,
+                timeout=None):
     """Fetch a URL, optionally caching for a specified time.
 
     Args:
