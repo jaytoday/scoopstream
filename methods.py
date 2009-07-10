@@ -274,7 +274,7 @@ class Links():
     import re
     codes = re.compile( '&.{1,6};' )
     try: 
-        title = soup.html.head.title.contents[0].encode("latin1").decode('utf-8')
+        title = soup.html.head.title.contents[0].encode("latin1").decode("utf-8")
         title = codes.sub('', title).replace("\n","")
     except: title = None
     if title: content = title
@@ -284,7 +284,7 @@ class Links():
     content_nodes.extend( soup.html.body.findAll('p')[:10] )
     # Um just the paragraphs 
     for node in content_nodes:
-		  try: this_text = node.findAll(text=True)[0].encode("latin1").decode('utf-8') 
+		  try: this_text = node.findAll(text=True)[0].encode("latin1").decode("utf-8")
 		  except: continue
 		  if len(this_text) > MIN_TEXT_LENGTH: content += " " + this_text
     
