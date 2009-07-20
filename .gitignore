@@ -1,0 +1,6 @@
+*.pyc
+*~
+*.sh
+*.DS_Store
+*.diff
+*.orig

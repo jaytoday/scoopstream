@@ -49,7 +49,11 @@ class RPCHandler(webapp.RequestHandler):
 
 
 
-
+  def delete_old_scoops(self, *args):
+    from datastore import Scoop	
+    scoops = Scoop.all().order('-date').fetch(1000)
+    db.delete(scoops[20:])
+    
 
   def find_twitter_scoops(self, *args):
   	from datastore import User
