@@ -1,4 +1,6 @@
-# The App Engine Console model package
+#!/usr/bin/env python
+#
+# testpaths.py - Set up the correct sys.path for the test suite to run.
 #
 # Copyright 2008-2009 Proven Corporation Co., Ltd., Thailand
 #
@@ -17,6 +19,23 @@
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-"""App Engine Console models package"""
+from os.path import dirname, join, abspath
+import sys
 
-from console import AppEngineConsole
+def addPath(dir):
+    if dir not in sys.path:
+        sys.path.insert(0, dir)
+
+thisFile    = abspath(__file__)
+thisDir     = dirname(thisFile)
+appPath     = abspath(join(thisDir, '..', '..'))
+consolePath = join(appPath, 'console', 'app')
+gaePath     = abspath(join(appPath, '..', 'google_appengine'))
+gaeLibPath  = join(gaePath, 'lib')
+yamlPath    = join(gaeLibPath, 'yaml', 'lib')
+webobPath   = join(gaeLibPath, 'webob')
+djangoPath  = join(gaeLibPath, 'django')
+
+# Go in reverse priority order due to to the insertion mechanism.
+for dir in (consolePath, appPath, gaePath, yamlPath, webobPath, djangoPath):
+    addPath(dir)

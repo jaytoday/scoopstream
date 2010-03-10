@@ -1,6 +1,6 @@
 # App Engine Console MVC Model
 #
-# Copyright 2008 Proven Corporation Co., Ltd., Thailand
+# Copyright 2008-2009 Proven Corporation Co., Ltd., Thailand
 #
 # This file is part of App Engine Console.
 #
@@ -23,6 +23,7 @@ import new
 import code
 import types
 import logging
+import cPickle
 import StringIO
 import datetime
 import traceback
@@ -49,6 +50,15 @@ class AppEngineConsole(ShellSession):
     def __init__(self, *args, **kw):
         ShellSession.__init__(self, *args, **kw)
         self.fresh()
+
+    def storedValue(self, obj):
+        """Returns a string representing the given object's value, which should allow the
+        code below to determine whether the object changes over time.
+        """
+        if isinstance(obj, UNPICKLABLE_TYPES):
+            return repr(obj)
+        else:
+            return cPickle.dumps(obj)
 
     def fresh(self):
         self.out = ''
@@ -137,6 +147,20 @@ class AppEngineConsole(ShellSession):
             # Execute it.
             buf = StringIO.StringIO()
             old_globals = dict(statement_module.__dict__)
+
+            # Later on, we compare new variable ("global") values to these values to see what's changed
+            # and should be saved in the store; however, since old_globals is merely a shallow copy,
+            # naively comparing for inequality between old/new values will not work: mutating a list
+            # or dict for example will change the underlying object in *both* dicts and so the != comparison
+            # will return false.  In other words:
+            # >>> a = {'foo': [1, 2]}; b = dict(a); print a['foo'] is b['foo']
+            # True
+            #
+            # The current solution is to remember the object's pickled representation and compare
+            # the before and after pickled strings.  Another idea is maybe de-optimizing this completely and
+            # just always re-store every global.
+            old_global_values = dict([(a, self.storedValue(b)) for a, b in old_globals.items()])
+
             try:
                 old_stdout = sys.stdout
                 old_stderr = sys.stderr
@@ -165,7 +189,7 @@ class AppEngineConsole(ShellSession):
             # Extract the new globals that this statement added.
             new_globals = {}
             for name, val in statement_module.__dict__.items():
-                if name not in old_globals or val != old_globals[name]:
+                if name not in old_global_values or self.storedValue(val) != old_global_values[name]:
                     new_globals[name] = val
 
             if True in [isinstance(val, UNPICKLABLE_TYPES) for val in new_globals.values()]:

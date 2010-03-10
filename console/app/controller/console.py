@@ -1,6 +1,6 @@
 # App Engine Console MVC Controller
 #
-# Copyright 2008 Proven Corporation Co., Ltd., Thailand
+# Copyright 2008-2009 Proven Corporation Co., Ltd., Thailand
 #
 # This file is part of App Engine Console.
 #
@@ -35,12 +35,11 @@ import util
 import models
 import config
 
-from google.appengine.api        import users
-from google.appengine.api        import memcache
 from google.appengine.ext        import db
 from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
-from django.utils                import simplejson
+
+from autoexec import *
 
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
@@ -171,7 +170,7 @@ class Statement(ConsoleHandler):
             self.confirmPostRate()
         except ConsoleError:
             # Acces denied.
-            logging.info('Access denied (%s): %s' % (exc_type, username()))
+            logging.info('Access denied (%s): %s\n%s' % (exc_type, username(), code))
             exc_type, exc_value, tb = sys.exc_info()
             err = self.formatConsoleError(code, exc_type, exc_value)
             result = False
@@ -300,7 +299,11 @@ class Banner(ConsoleHandler):
         logging.debug('Fetching banner for: %s' % username())
 
         copyright = 'Type "help", "copyright", "credits" or "license" for more information.'
-        banner = "Python %s on %s\n%s\n(%s)" % (sys.version, sys.platform, copyright, os.environ['SERVER_SOFTWARE'])
+        if util.app_id() == 'yupgrade':
+          custom_msg = '\nNOTE: Do not db.delete entities where model utils should be used!'
+        else: custom_msg = ''
+        banner = "Python %s on %s\n%s\n(%s)%s" % (sys.version, sys.platform, copyright, 
+        os.environ['SERVER_SOFTWARE'], custom_msg)
 
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.response.out.write(simplejson.dumps({'banner':banner}))
@@ -393,10 +396,13 @@ class Console(Page):
         if util.is_my_website():
             self.values['ratelimit'] = self.PUBLIC_STATEMENT_LIMIT
 
+        """
         if config.pastebin_subdomain:
             pastebin = 'http://%s.pastebin.com/' % config.pastebin_subdomain
         else:
             pastebin = 'http://pastebin.com'
+        """
+        pastebin = 'http://jamtodaycdn.appspot.com/paste'
 
         room = '%s-appengine-console' % self.appID
 

@@ -17,7 +17,7 @@ allow_any_user = False
 analytics_id = '12737410'
 
 # Set this to a string if you wish to use a subdomain of pastebin.com.
-pastebin_subdomain = 'trixy'
+pastebin_subdomain = ''
 
 # In production mode (hosted at Google), anonymous users may not use the console.
 # But in development mode, anonymous users may.  If you still want to disallow
@@ -31,4 +31,4 @@ python_doc_linking = True
 
 # The location of the newer (Sphinx) Python documentation.  If you have a local
 # copy, you can set this to use your own version instead.
-python_doc = 'http://docs.python.org/dev'
+python_doc = 'http://docs.python.org'

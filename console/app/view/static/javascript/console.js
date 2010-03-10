@@ -1,6 +1,6 @@
 /* App Engine Console client-side functionality
  *
- * Copyright 2008 Proven Corporation Co., Ltd., Thailand
+ * Copyright 2008-2009 Proven Corporation Co., Ltd., Thailand
  *
  * This file is part of App Engine Console.
  *
@@ -28,9 +28,23 @@ var hist = {
     'pending' : ''
 };
 
+/* Change this to false to use alert popups for Safari logging. */
+var SILENT_ALERTS = true;
+
+var silentLogger  = function(msg) { };
+
+/* Safari seems not to have these. 
+
+if(window.console !== undefined) {
+    if(window.console.debug === undefined)
+        window.console.debug = SILENT_ALERTS ? silentLogger : function(msg) { alert('Debug: ' + msg); };
+    if(window.console.error === undefined)
+        window.console.error = SILENT_ALERTS ? silentLogger : function(msg) { alert('Error: ' + msg); };
+}
+*/
 // Processing begins here.
 var main = function() {
-    console.debug('Starting');
+
 
     // Event handlers
     $('#console_form').submit(statementSubmit);
@@ -53,7 +67,7 @@ var statementSubmit = function(event) {
     try {
         var input = $('#console_statement');
         var statement = input.val();
-        console.debug('Statement submitted: %s', statement);
+
 
         input.val('');
 
@@ -108,7 +122,6 @@ var statementSubmit = function(event) {
                 case 'error':
                 case 'notmodified':
                 case 'parseerror':
-                    console.error('Statement error: %s; response=%s', textStatus, response);
                     return;
                     break;
             }
@@ -118,14 +131,15 @@ var statementSubmit = function(event) {
             if(highlight)
                 statementContainer.addClass('pygments').removeClass('plain');
 
-            // Append the server output.
+            // Append the server output.  For non-highlighting mode, the response is manually appended inside
+            // the PRE tag to fix a rendering bug with IE.
             var output;
             if(highlight)
-                output = $('<div>').addClass('pygments');
+                output = $('<div>').addClass('pygments').append(response.out);
             else
-                output = $('<pre>');
+                output = $('<pre>' + response.out + '</pre>');
 
-            output.addClass('output').append(response.out)
+            output.addClass('output');
             $('#console_output').append(output);
 
             scrollOutput();
@@ -156,7 +170,7 @@ var statementKeyUp = function(event) {
     }
 
     if(orig.shiftKey || orig.altKey || orig.metaKey || orig.ctrlKey) {
-        console.debug('Ignoring keypress with a modifier key');
+       // console.debug('Ignoring keypress with a modifier key');
         return;
     }
 
@@ -197,7 +211,7 @@ var fetchBanner = function() {
         if(textStatus == 'success')
             $('#console_output').append($('<pre class="banner">' + response.banner + '</pre>'));
         else  {
-            console.error('Banner error: %s; response=%s', textStatus, response);
+            //console.error('Banner error: %s; response=%s', textStatus, response);
             $('#console_output').append($('<pre class="error">(Failed to fetch Python banner)</pre>'));
         }
         showPrompt();
@@ -226,7 +240,7 @@ var showPrompt = function(continuing) {
 };
 
 var cls = function() {
-    console.debug('Clearing screen');
+   // console.debug('Clearing screen');
 };
 
 var moveHistory = function(delta) {
@@ -275,23 +289,25 @@ var setTeamwork = function(event) {
     /* Handle the various teamwork settings. */
     var choice     = $('#setting_teamwork').val();
     var talkinator = $('#talkinator');
+    j = talkinator;
     var pastebin   = $('#pastebin');
     var console    = $('#console_interface');
 
     /* Talkinator stuff */
     var showTalkinator = function() {
         var room = $('#setting_room').val();
-        var widgetWidth = 250;
+        var widgetWidth = 240;
         var frameHeight = 540;
-        var consoleOffset = widgetWidth + 10;
+        var consoleOffset = widgetWidth + 30;
 
         if(is_ie) {
             frameHeight -= 50;
             consoleOffset += 10;
         }
 
-        console.width(console.width() - consoleOffset);
         talkinator.width(widgetWidth);
+        talkinator.parent().addClass('has-sidebar');
+        $('#yui-main > .yui-b').addClass('has-sidebar');
         talkinator.css('display', 'block');
         talkinator.html(
             '<iframe width="' + widgetWidth + '" height="' + frameHeight + '" marginwidth="0" marginheight="0" scrolling="no"' +
@@ -303,8 +319,8 @@ var setTeamwork = function(event) {
     var hideTalkinator = function() {
         talkinator.html('');
         talkinator.css('display', 'none');
-        talkinator.width(0);
-        console.width('100%');
+        talkinator.parent().removeClass('has-sidebar');
+        $('#yui-main > .yui-b').removeClass('has-sidebar');
     };
 
     /* Pastebin stuff */
@@ -338,7 +354,7 @@ var setTeamwork = function(event) {
 };
 
 var setDashboard = function(event) {
-    console.debug('doing dashboard');
+    //console.debug('doing dashboard');
     /* Handle the dashboard iframe */
     var choice = $('#setting_dash_type').val();
     if(choice == null)
@@ -374,6 +390,7 @@ var is_ie = (navigator.appName=='Microsoft Internet Explorer') ? true : false;
 //
 
 // Support no-op logging in a non-Firebug environment.
+/*
 try {
     console;
 }
@@ -385,7 +402,7 @@ catch(e) {
         'error' : noop
     };
 }
-
+*/
 $(document).ready(main);
 
 //})();

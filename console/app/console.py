@@ -1,6 +1,6 @@
 # The WSGI entry-point for App Engine Console
 #
-# Copyright 2008 Proven Corporation Co., Ltd., Thailand
+# Copyright 2008-2009 Proven Corporation Co., Ltd., Thailand
 #
 # This file is part of App Engine Console.
 #
@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
 
 import os
 import re
@@ -35,7 +36,6 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 debug = util.is_dev()
-logging.info('WSGI debugging: %s' % debug)
 application = webapp.WSGIApplication([
     ('/'                  , controller.Root),
     ('/console/dashboard/', controller.Dashboard),
@@ -46,7 +46,8 @@ application = webapp.WSGIApplication([
 ], debug=debug)
 
 def main():
-    logging.getLogger().setLevel(logging.DEBUG)
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     run_wsgi_app(application)
 
 if __name__ == "__main__":
