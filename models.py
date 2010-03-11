@@ -7,6 +7,7 @@ class ActivityProfile(db.Model):
 		#key_name - app_username
 		client = db.StringProperty(default="twitter")
 		platform = db.StringProperty(default="twitter")
+		name = db.StringProperty(required=False)
 		profile_image_url = db.StringProperty(required=False)
 		username = db.StringProperty(required=False)
 		date = db.DateTimeProperty(auto_now_add=True)
@@ -17,10 +18,15 @@ class ActivityProfile(db.Model):
 class StatusUpdate(db.Model):
 	#key_name - user.key().name()_update-id
 	user = db.ReferenceProperty(ActivityProfile)
-	date = db.DateTimeProperty(auto_now_add=True)
+	platform = db.StringProperty(default="twitter")
+	short_url = db.StringProperty(required=True)
+  lat = db.FloatProperty(required=False)
+  lon = db.FloatProperty(required=False)
+	date = db.DateTimeProperty() # from update
 	text = db.StringProperty() # update text
 	id = db.StringProperty()
 	saved = db.DateTimeProperty(auto_now_add=True)
+	
 	
 	
 	
