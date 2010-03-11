@@ -10,6 +10,7 @@ class ActivityProfile(db.Model):
 		name = db.StringProperty(required=False)
 		profile_image_url = db.StringProperty(required=False)
 		username = db.StringProperty(required=False)
+		update_count = db.IntegerProperty(default=0)
 		date = db.DateTimeProperty(auto_now_add=True)
 		modified = db.DateTimeProperty(auto_now=True)
 		#activity = properties.PickledProperty(required=False)
@@ -19,14 +20,14 @@ class StatusUpdate(db.Model):
 	#key_name - user.key().name()_update-id
 	user = db.ReferenceProperty(ActivityProfile)
 	platform = db.StringProperty(default="twitter")
-	short_url = db.StringProperty(required=True)
-  lat = db.FloatProperty(required=False)
-  lon = db.FloatProperty(required=False)
+	location_id = db.StringProperty(required=True)
+	lat = db.FloatProperty(required=False)
+	lon = db.FloatProperty(required=False)
 	date = db.DateTimeProperty() # from update
 	text = db.StringProperty() # update text
 	id = db.StringProperty()
 	saved = db.DateTimeProperty(auto_now_add=True)
-	
+
 	
 	
 	

@@ -9,6 +9,7 @@ __version__ = '0.5'
 
 
 import base64
+import datetime
 import md5
 import os
 from django.utils import simplejson
@@ -22,6 +23,12 @@ import twitter
 
 class TwitterError(Exception):
   '''Base class for Twitter errors'''
+  pass
+
+class AuthError(TwitterError):
+  def __init__(self):
+    import logging
+    logging.warning('unable to get authorization for Twitter API method')
 
 
 class Status(object):
@@ -29,15 +36,15 @@ class Status(object):
 
   The Status structure exposes the following properties:
 
-    status.created_at
-    status.created_at_in_seconds # read only
+    status.date
+    status.date_in_seconds # read only
     status.id
     status.text
-    status.relative_created_at # read only
+    status.relative_date # read only
     status.user
   '''
   def __init__(self,
-               created_at=None,
+               date=None,
                id=None,
                text=None,
                user=None,
@@ -50,10 +57,10 @@ class Status(object):
     Note: Dates are posted in the form "Sat Jan 27 04:17:38 +0000 2007"
 
     Args:
-      created_at: The time this status message was posted
+      date: The time this status message was posted
       id: The unique id of this status message
       text: The text of this status message
-      relative_created_at:
+      relative_date:
         A human readable string representing the posting time
       user:
         A twitter.User instance representing the person posting the message
@@ -61,7 +68,7 @@ class Status(object):
         The current time, if the client choses to set it.  Defaults to the
         wall clock time.
     '''
-    self.created_at = created_at
+    self.date = date
     self.id = id
     self.text = text
     self.user = user
@@ -73,17 +80,17 @@ class Status(object):
     Returns:
       The time this status message was posted
     '''
-    return self._created_at
+    return self._date
 
-  def SetCreatedAt(self, created_at):
+  def SetCreatedAt(self, date):
     '''Set the time this status message was posted.
 
     Args:
-      created_at: The time this status message was created
+      date: The time this status message was created
     '''
-    self._created_at = created_at
+    self._date = date
 
-  created_at = property(GetCreatedAt, SetCreatedAt,
+  date = property(GetCreatedAt, SetCreatedAt,
                         doc='The time this status message was posted.')
 
   def GetCreatedAtInSeconds(self):
@@ -92,9 +99,9 @@ class Status(object):
     Returns:
       The time this status message was posted, in seconds since the epoch.
     '''
-    return time.mktime(time.strptime(self.created_at, '%a %b %d %H:%M:%S +0000 %Y'))
+    return time.mktime(time.strptime(self.date, '%a %b %d %H:%M:%S +0000 %Y'))
 
-  created_at_in_seconds = property(GetCreatedAtInSeconds,
+  date_in_seconds = property(GetCreatedAtInSeconds,
                                    doc="The time this status message was "
                                        "posted, in seconds since the epoch")
 
@@ -143,7 +150,7 @@ class Status(object):
       A human readable string representing the posting time
     '''
     fudge = 1.25
-    delta  = int(self.now) - int(self.created_at_in_seconds)
+    delta  = int(self.now) - int(self.date_in_seconds)
 
     if delta < (1 * fudge):
       return 'about a second ago'
@@ -162,7 +169,7 @@ class Status(object):
     else:
       return 'about %d days ago' % (delta / (60 * 60 * 24))
 
-  relative_created_at = property(GetRelativeCreatedAt,
+  relative_date = property(GetRelativeCreatedAt,
                                  doc='Get a human readable string representing'
                                      'the posting time')
 
@@ -189,7 +196,7 @@ class Status(object):
   def GetNow(self):
     '''Get the wallclock time for this status message.
 
-    Used to calculate relative_created_at.  Defaults to the time
+    Used to calculate relative_date.  Defaults to the time
     the object was instantiated.
 
     Returns:
@@ -203,7 +210,7 @@ class Status(object):
   def SetNow(self, now):
     '''Set the wallclock time for this status message.
 
-    Used to calculate relative_created_at.  Defaults to the time
+    Used to calculate relative_date.  Defaults to the time
     the object was instantiated.
 
     Args:
@@ -221,7 +228,7 @@ class Status(object):
   def __eq__(self, other):
     try:
       return other and \
-             self.created_at == other.created_at and \
+             self.date == other.date and \
              self.id == other.id and \
              self.text == other.text and \
              self.user == other.user
@@ -255,8 +262,8 @@ class Status(object):
       A dict representing this twitter.Status instance
     '''
     data = {}
-    if self.created_at:
-      data['created_at'] = self.created_at
+    if self.date:
+      data['date'] = self.date
     if self.id:
       data['id'] = self.id
     if self.text:
@@ -278,7 +285,8 @@ class Status(object):
       user = User.NewFromJsonDict(data['user'])
     else:
       user = None
-    return Status(created_at=data.get('created_at', None),
+    return Status(date=datetime.datetime.strptime(data.get('created_at'),
+                  '%a %b %d %H:%M:%S +0000 %Y'),
                   id=data.get('id', None),
                   text=data.get('text', None),
                   user=user)
@@ -306,6 +314,12 @@ class User(object):
                description=None,
                profile_image_url=None,
                url=None,
+               protected = None,
+               followers_count=None,
+               following_count=None,
+               friends_count = None,
+               statuses_count=None,
+               
                status=None):
     self.id = id
     self.name = name
@@ -314,7 +328,14 @@ class User(object):
     self.description = description
     self.profile_image_url = profile_image_url
     self.url = url
+    self.protected = protected
     self.status = status
+    self.followers_count = followers_count
+    self.following_count = following_count
+    self.statuses_count = statuses_count
+    self.friends_count = friends_count
+    
+    
 
 
   def GetId(self):
@@ -550,7 +571,12 @@ class User(object):
                 location=data.get('location', None),
                 description=data.get('description', None),
                 profile_image_url=data.get('profile_image_url', None),
+                protected=data.get('protected', None),
                 url=data.get('url', None),
+                followers_count=data.get('followers_count', None),
+                following_count=data.get('following_count', None),
+                friends_count=data.get('friends_count', None),
+                statuses_count=data.get('statuses_count', None),
                 status=status)
 
 class DirectMessage(object):
@@ -559,8 +585,8 @@ class DirectMessage(object):
   The DirectMessage structure exposes the following properties:
 
     direct_message.id
-    direct_message.created_at
-    direct_message.created_at_in_seconds # read only
+    direct_message.date
+    direct_message.date_in_seconds # read only
     direct_message.sender_id
     direct_message.sender_screen_name
     direct_message.recipient_id
@@ -570,7 +596,7 @@ class DirectMessage(object):
 
   def __init__(self,
                id=None,
-               created_at=None,
+               date=None,
                sender_id=None,
                sender_screen_name=None,
                recipient_id=None,
@@ -585,7 +611,7 @@ class DirectMessage(object):
 
     Args:
       id: The unique id of this direct message
-      created_at: The time this direct message was posted
+      date: The time this direct message was posted
       sender_id: The id of the twitter user that sent this message
       sender_screen_name: The name of the twitter user that sent this message
       recipient_id: The id of the twitter that received this message
@@ -593,7 +619,7 @@ class DirectMessage(object):
       text: The text of this direct message
     '''
     self.id = id
-    self.created_at = created_at
+    self.date = date
     self.sender_id = sender_id
     self.sender_screen_name = sender_screen_name
     self.recipient_id = recipient_id
@@ -625,17 +651,17 @@ class DirectMessage(object):
     Returns:
       The time this direct message was posted
     '''
-    return self._created_at
+    return self._date
 
-  def SetCreatedAt(self, created_at):
+  def SetCreatedAt(self, date):
     '''Set the time this direct message was posted.
 
     Args:
-      created_at: The time this direct message was created
+      date: The time this direct message was created
     '''
-    self._created_at = created_at
+    self._date = date
 
-  created_at = property(GetCreatedAt, SetCreatedAt,
+  date = property(GetCreatedAt, SetCreatedAt,
                         doc='The time this direct message was posted.')
 
   def GetCreatedAtInSeconds(self):
@@ -644,9 +670,9 @@ class DirectMessage(object):
     Returns:
       The time this direct message was posted, in seconds since the epoch.
     '''
-    return time.mktime(time.strptime(self.created_at, '%a %b %d %H:%M:%S +0000 %Y'))
+    return time.mktime(time.strptime(self.date, '%a %b %d %H:%M:%S +0000 %Y'))
 
-  created_at_in_seconds = property(GetCreatedAtInSeconds,
+  date_in_seconds = property(GetCreatedAtInSeconds,
                                    doc="The time this direct message was "
                                        "posted, in seconds since the epoch")
 
@@ -752,7 +778,7 @@ class DirectMessage(object):
     try:
       return other and \
           self.id == other.id and \
-          self.created_at == other.created_at and \
+          self.date == other.date and \
           self.sender_id == other.sender_id and \
           self.sender_screen_name == other.sender_screen_name and \
           self.recipient_id == other.recipient_id and \
@@ -790,8 +816,8 @@ class DirectMessage(object):
     data = {}
     if self.id:
       data['id'] = self.id
-    if self.created_at:
-      data['created_at'] = self.created_at
+    if self.date:
+      data['date'] = self.date
     if self.sender_id:
       data['sender_id'] = self.sender_id
     if self.sender_screen_name:
@@ -813,7 +839,7 @@ class DirectMessage(object):
     Returns:
       A twitter.DirectMessage instance
     '''
-    return DirectMessage(created_at=data.get('created_at', None),
+    return DirectMessage(date=data.get('created_at', None),
                          recipient_id=data.get('recipient_id', None),
                          sender_id=data.get('sender_id', None),
                          text=data.get('text', None),
@@ -992,7 +1018,12 @@ class Api(object):
     else:
       url = 'http://twitter.com/statuses/user_timeline.json'
     json = self._FetchUrl(url, parameters=parameters)
-    data = simplejson.loads(json)
+    try: 
+      data = simplejson.loads(json)
+    except ValueError:
+      logging.error('unable to load twitter json: %s' % json)
+      from google.appengine.api import urlfetch
+      raise urlfetch.DownloadError
     return [Status.NewFromJsonDict(x) for x in data]
 
   def GetStatus(self, id):
@@ -1424,7 +1455,10 @@ class Api(object):
 
     # Open and return the URL immediately if we're not going to cache
     if encoded_post_data or no_cache or not self._cache or not self._cache_timeout:
-      url_data = opener.open(url, encoded_post_data).read()
+      try:
+         url_data = opener.open(url, encoded_post_data).read()
+      except urllib2.HTTPError:
+        raise AuthError
     else:
       # Unique keys are a combination of the url and the username
       if self._username:
