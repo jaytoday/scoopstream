@@ -1,1 +1,10 @@
 cron:
+
+  
+- description: update random user
+  url: /update_random_user
+  schedule: every 10 minutes
+  
+- description: get coordinates
+  url: /get_coordinates
+  schedule: every 10 minutes

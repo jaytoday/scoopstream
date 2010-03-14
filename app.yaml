@@ -5,6 +5,10 @@ api_version: 1
 
 handlers:
 
+- url: /_ah/queue/deferred
+  script: deferred.py
+  login: admin
+
 - url: /static/
   static_dir: static/
 
