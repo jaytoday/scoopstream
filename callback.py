@@ -49,5 +49,5 @@ def _runCallback():
 	}            
 	args_enc = urllib.urlencode(args)
 	logging.info('args for callback: %s' % args_enc)
-	urlfetch.fetch('http://' + rails_server + "/checkins/create?checkins", payload=args_enc, method="POST")
+	urlfetch.fetch('http://' + rails_server + "/checkins/create?", payload=args_enc, method="POST")
 	return True
